@@ -3,6 +3,13 @@ MAINTAINER bonza "bonzaphp@gmail.com"
 
 ENV TZ=Asia/Shanghai
 
+USER root
+
+RUN  mv /etc/apt/sources.list /etc/apt/sources.list.bak
+
+COPY $PWD/php.ini /usr/local/etc/php/
+COPY $PWD/sources.list /etc/apt/
+
 RUN apt-get update && apt-get install -y \
         libfreetype6-dev \
         libjpeg62-turbo-dev \
@@ -12,9 +19,13 @@ RUN apt-get update && apt-get install -y \
     && docker-php-ext-install zip \
     && docker-php-ext-install pdo_mysql \
     && docker-php-ext-install opcache \
-    &&  apt-get purge -y --auto-remove -o APT::AutoRemove::RecommendsImportant=false \
-    &&  apt-get clean
+    && apt-get purge -y --auto-remove -o APT::AutoRemove::RecommendsImportant=false \
+    && apt-get clean
 
-RUN pecl install redis && docker-php-ext-enable redis \
+RUN pecl channel-update pecl.php.net \
+    && php -i |grep php.ini \
+    && pecl install -o -f redis && rm -rf /tmp/pear && docker-php-ext-enable redis \
 	&& echo "extension=redis.so" >> /usr/local/etc/php/php.ini \
+    && pecl install -o -f swoole && rm -rf /tmp/pear && docker-php-ext-enable swoole \
+	&& echo "extension=swoole.so" >> /usr/local/etc/php/php.ini \
     && usermod -u 1000 www-data
